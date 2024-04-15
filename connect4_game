@@ -1,0 +1,451 @@
+def num_hours() -> float :
+    """Returns the number of hours used to complete the assignment as a float.
+
+    Return:
+        float: Estimated number of hours.
+    """
+    return 88.0
+
+def generate_initial_board() -> list[str] :
+    """Returns empty board state.
+
+    Return:
+        list[str]: Empty, valid board state only containing '-'.
+    """
+    return ['--------', '--------', '--------', '--------', '--------',
+            '--------', '--------', '--------']
+
+def is_column_full(column: str) -> bool :
+    """Checks if the column is full.
+
+    Parameters:
+        column (str): The string of pieces entered.
+
+    Return:
+        bool: True if 'column' is full, False otherwise.
+        
+    Preconditions:
+        column only contains '-', 'X', or 'O' with no blank spaces between
+        pieces.
+    """
+    if BLANK_PIECE in column :           
+        return False
+
+    else:
+        return True
+    
+def is_column_empty(column: str) -> bool :
+    """Checks if the column is empty.
+
+    Parameters:
+        column (str): The string of pieces entered.
+
+    Return:
+        bool: True if 'column' is empty, False otherwise.
+        
+    Preconditions:
+        column only contains '-', 'X', or 'O' with no blank spaces between
+        pieces
+    """
+    if BLANK_PIECE * BOARD_SIZE in column :    
+        return True
+    
+    else :
+        return False
+
+def display_board(board: list[str]) -> None : 
+    """Prints the game board with columns separated by pipe characters.
+
+    Game board is numbered below from column 1 to 8.
+
+    Parameters:
+        board (list[str]): Input board which is displayed. 
+
+    Preconditions:
+        board will contain exactly 8 strings each with exactly 8 characters.
+    """
+    # Starts each row with '|', to allow repeated pattern of '-|'
+    for row in range(BOARD_SIZE) :
+        start_row = COLUMN_SEPARATOR
+        
+        for column in range(BOARD_SIZE) :
+            start_row += board[column][row] + COLUMN_SEPARATOR
+
+        print(start_row)
+
+    print('','1','2','3','4','5','6','7','8','')
+    
+def check_input(command: str) -> bool :
+    """Checks if user input is well formatted.
+
+    If command is ill-formed, this function prints the relevant error
+    message before returning False. Relevant error message includes invalid
+    format or invalid column. 
+
+    Parameters:
+        command (str): Command user would like to check.
+
+    Return:
+        bool: True if 'command' is well formatted, False otherwise.
+
+    Preconditions:
+        User entered column must be single digit number.
+    """
+    if len(command) == 2 and command[0] in ('a','A','r','R') :
+        if command[1] in ('1','2','3','4','5','6','7','8') :
+            return True
+
+        # Only enters if column is 0 or 9
+        else :
+            print(INVALID_COLUMN_MESSAGE)
+            return False
+
+    if command in ('h','H','q','Q') :
+        return True
+
+    # Covers commands with length 0, 1 or greater than 2 
+    print(INVALID_FORMAT_MESSAGE)
+    return False
+
+def get_action() -> str :
+    """Repeatedly prompt user for a command until valid command is entered.
+
+    Return:
+        str: Valid command entered by user.
+    """
+    while True :
+        user_input = input(ENTER_COMMAND_MESSAGE)
+
+        if check_input(user_input) :
+            return user_input
+
+def add_piece(board: list[str], piece: str, column_index: int) -> bool :
+    """Places specified piece on the board in a valid position.
+
+    Piece added to the topmost available space in the requested column. If
+    the requested column is full, piece is not added and full column message
+    is displayed to user.
+    
+    Parameters:
+        board (list[str]): Specified board state.
+        piece (str): Piece to place on board.
+        column_index (int): Column to place piece in.
+
+    Return:
+        bool: True if 'piece' is added to valid position, False otherwise.
+
+    Preconditions:
+        board will contain exactly 8 strings each with exactly 8 characters
+        column index will be between 0 and 7 inclusive.
+        piece will be exactly one character in length.
+    """ 
+    first_available_cell = 0
+    
+    if is_column_full(board[column_index]) :
+        print(FULL_COLUMN_MESSAGE)
+        return False
+    
+    for cell in board[column_index] :
+        if cell == BLANK_PIECE :
+            first_available_cell += 1
+            
+    # Forms new column with added piece
+    board[column_index] = (board[column_index][:first_available_cell-1] +
+                           piece + board[column_index][first_available_cell:])
+    return True
+
+def remove_piece(board: list[str], column_index: int) -> bool :
+    """Removes specified piece on the board, forming a valid board state.
+
+    Removes the bottom-most piece from the column in the requested column. If
+    the requested column is empty, piece is not removed and empty column
+    message is displayed to user.
+
+    Parameters:
+        board (list[str]): Specified board state.
+        column_index (int): Column to remove piece from.
+
+    Return:
+        bool: True if 'piece' is removed from valid position, False otherwise.
+
+    Preconditions:
+        board will contain exactly 8 strings each with exactly 8 characters
+        and represents a valid game state.
+        column index will be between 0 and 7 inclusive.
+        piece will be exactly one character in length.
+    """
+    if is_column_empty(board[column_index]) :
+        print(EMPTY_COLUMN_MESSAGE)
+        return False
+
+    # Forms new column with removed piece
+    board[column_index] = BLANK_PIECE + board[column_index][:BOARD_SIZE-1]
+    return True
+
+def check_vertical(board: list[str]) -> Optional[str] :
+    """Checks vertical columns for valid wins.
+    
+    Parameters:
+        board (list[str]): Specified board state.
+
+    Return:
+        Optional[str]: 'X' if Player 1 wins, 'O' if Player 2 wins.
+
+    Preconditions:
+        board will contain exactly 8 strings each with exactly 8 characters
+        and represents a valid game state.
+    """
+    vertical_check = ""
+
+    # Checks if wins occurs for vertical
+    for column in board :
+        
+        if PLAYER_1_PIECE * REQUIRED_WIN_LENGTH in column :
+            vertical_check += PLAYER_1_PIECE
+
+        elif PLAYER_2_PIECE * REQUIRED_WIN_LENGTH in column :
+            vertical_check += PLAYER_2_PIECE
+
+    return vertical_check
+
+def check_horizontal(board: list[str]) -> Optional[str] :
+    """Checks horizontal rows for valid wins.
+
+    Parameters:
+        board (list[str]): Specified board state.
+
+    Return:
+        Optional[str]: 'X' if Player 1 wins, 'O' if Player 2 wins.
+
+    Preconditions:
+        board will contain exactly 8 strings each with exactly 8 characters
+        and represents a valid game state.
+    """
+    horizontal_check = ""
+    horizontals = []
+
+    # Build a list of the rows
+    for row in range(BOARD_SIZE) :
+        horizontal_row = ''
+        
+        for column in range(BOARD_SIZE) :
+            horizontal_row += board[column][row]
+
+            if len(horizontal_row) == BOARD_SIZE :
+                horizontals.append(horizontal_row)
+
+    # Checks if wins occurs for horizontal
+    for row in horizontals :
+        if PLAYER_1_PIECE * REQUIRED_WIN_LENGTH in row :
+            horizontal_check += PLAYER_1_PIECE
+        
+        elif PLAYER_2_PIECE * REQUIRED_WIN_LENGTH in row :
+            horizontal_check += PLAYER_2_PIECE
+
+    return horizontal_check
+
+def check_diagonal_top(board: list[str]) -> Optional[str] :
+    """Checks diagonals for valid wins.
+
+    Only covers the upper board triangle formed from top right to bottom left.
+
+    Parameters:
+        board (list[str]): Specified board state.
+
+    Return:
+        Optional[str]: 'X' if Player 1 wins, 'O' if Player 2 wins.
+
+    Preconditions:
+        board will contain exactly 8 strings each with exactly 8 characters
+        and represents a valid game state.
+    """
+    (diagonal_check, diagonal_right_to_left) = ('', '')
+    (column, row) = (1, 0)
+    increment_to_next_column = 2
+    diagonals = []
+    
+    # Builds a list of all the diagonals from top right to bottom left
+    while 0 <= column <= 7 and 0 <= row <= 7 :
+            
+        diagonal_right_to_left += board[column][row]
+
+        if column == 0 :
+            diagonals.append(diagonal_right_to_left) 
+            row = 0
+            column += increment_to_next_column 
+            increment_to_next_column += 1
+            diagonal_right_to_left = '' # Next diagonal adds as separate string
+
+        # Completes the diagonal
+        elif column != 0 :
+            column -= 1
+            row += 1
+
+    # Checks if wins occurs for diagonal
+    for each_diagonal in diagonals :
+        if PLAYER_1_PIECE * REQUIRED_WIN_LENGTH in each_diagonal :
+            diagonal_check += PLAYER_1_PIECE
+                     
+        elif PLAYER_2_PIECE * REQUIRED_WIN_LENGTH in each_diagonal :
+            diagonal_check += PLAYER_2_PIECE
+            
+    return diagonal_check
+
+def rotate_board(board: list[str]) -> list[str] :
+    """Inverts each column upside-down and forms new board state.
+
+    Parameters:
+        board (list[str]): Specified board state.
+
+    Returns:
+        list[str]: Board state flipped along the horizontal axis.
+
+    Preconditions:
+        board will contain exactly 8 strings each with exactly 8 characters
+        and represents a valid game state.
+
+    Example :
+        >>> board = ['--------', '----OOOO', '-XXOOOXX', '--------',
+        '------XO', '--------','---XXOXO', '--------']
+        >>> rotate_board(board)
+        >>> board
+        ['--------', 'OOOO----', 'XXOOOXX-', '--------', 'OX------',
+        '--------', 'OXOXX---', '--------']
+    """
+    board_rotated = []
+    
+    for column in board :
+        board_rotated.append(column[::-1])
+
+    return board_rotated
+    
+def check_win(board: list[str]) -> Optional[str] :
+    """Checks the given board state for a win or draw.
+
+    Parameters:
+        board (list[str]): Specified board state.
+
+    Returns:
+        Optional[str]: 'X' for Player 1 win, 'O' for Player 2 win, '-' for draw.
+
+    Preconditions:
+        board will contain exactly 8 strings each with exactly 8 characters
+        and represents a valid game state.
+    """
+    rotated_board = rotate_board(board)
+
+    # Possible locations wins occur
+    vertical = check_vertical(board)
+    horizontal = check_horizontal(board)
+    diagonal_upper_topright_bottomleft = check_diagonal_top(board)
+    diagonal_upper_topleft_bottomright = check_diagonal_top(board[::-1])
+    diagonal_lower_topleft_bottomright = check_diagonal_top(rotated_board)
+    diagonal_lower_topright_bottomleft = check_diagonal_top(rotated_board[::-1])
+
+    check_all = (vertical + horizontal + diagonal_upper_topright_bottomleft +
+             diagonal_upper_topleft_bottomright +
+             diagonal_lower_topleft_bottomright +
+             diagonal_lower_topright_bottomleft)
+
+    # Checks for winning player or draw
+    if 'XO' in check_all or 'OX' in check_all :
+        return BLANK_PIECE
+
+    elif PLAYER_1_PIECE in check_all :
+        return PLAYER_1_PIECE
+
+    elif PLAYER_2_PIECE in check_all :
+        return PLAYER_2_PIECE
+
+def play_game() -> None :
+    """Coordinates gameplay of a single game from start to finish.
+
+    Allows player to quit game at any stage.
+    """
+    player_counter = 0
+    player_piece = ''
+    
+    board = generate_initial_board()
+    display_board(board)
+
+    game_going = True
+    
+    while game_going :
+
+        # Keeps track of player turn
+        if player_counter % 2 == 0 :
+            player_turn = PLAYER_1_MOVE_MESSAGE
+            player_piece = PLAYER_1_PIECE
+
+        else :
+            player_turn = PLAYER_2_MOVE_MESSAGE
+            player_piece = PLAYER_2_PIECE
+
+        # Checks wins before continuing game
+        win = check_win(board)
+        
+        if not win :
+            print(player_turn)
+            
+        elif win == PLAYER_1_PIECE :
+            print(PLAYER_1_VICTORY_MESSAGE)
+            break
+        
+        elif win == PLAYER_2_PIECE :
+            print(PLAYER_2_VICTORY_MESSAGE)
+            break
+        
+        elif win == BLANK_PIECE :
+            print(DRAW_MESSAGE)
+            break
+        
+        while True :
+            command = get_action()
+            
+            # Checks type of user input
+            if command in ('H','h') :
+                print(HELP_MESSAGE)
+                
+            elif command in ('Q','q') :
+                game_going = False
+                break
+            
+            elif command[0] in ('A','a') :
+                check_add = add_piece(board, player_piece, int(command[1])-1)
+                if not check_add:
+                    continue
+                
+            elif command[0] in ('R','r') :
+                check_remove = remove_piece(board, int(command[1])-1)
+                if not check_remove:
+                    continue
+
+            # Displays the updated board
+            display_board(board)
+
+            # Allows player to continue turn after asking help 
+            if command in ('H', 'h') :
+                player_counter += 0
+
+            else :
+                player_counter += 1
+
+            break
+
+def main() -> None :
+    """The main function called when file runs.
+
+    Provides player with choice to replay after finished game. 
+    """
+    while True :
+        play_game()
+        player_choice = input(CONTINUE_MESSAGE)
+
+        # Option to continue playing after finished game
+        if player_choice in ('Y','y') :
+            continue
+
+        break
+
+if __name__ == "__main__" :
+    main()
