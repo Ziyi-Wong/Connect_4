@@ -1,3 +1,6 @@
+from typing import Optional
+from a1_support import *
+
 def num_hours() -> float :
     """Returns the number of hours used to complete the assignment as a float.
 
